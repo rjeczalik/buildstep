@@ -1,2 +1,22 @@
 #!/bin/bash
+
+set -euo pipefail
+
+ln -s -f /bin/true /usr/bin/chfn
+
+export BUID=$(stat --format=%u /app)
+export BGID=$(stat --format=%g /app)
+
+if ! getent group $BGID &>/dev/null; then
+	addgroup --gid $BGID buildstep
+fi
+
+if ! getent passwd $BUID &>/dev/null; then
+	adduser --uid $BUID --gecos "" --ingroup buildstep --disabled-password buildstep
+fi
+
 exec /bin/herokuish buildpack build
+
+test -d /app/vendor/bundle/ruby && cd /app/vendor/bundle/ruby && ln -s */ current || true
+
+chown -R buildstep:buildstep /app
